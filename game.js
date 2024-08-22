@@ -11,15 +11,15 @@ class Player {
         this.def = def; //방어확률
     }
 
-    attack(player, monster) {
+    attack(monster) {
         if (monster.def === true) {
             console.log(chalk.red(`몬스터가 방어에 성공하여 공격에 실패했습니다.`));
             monster.def = false;
         }
         else {
             let AtkPro = ((Math.random() * (1.5 - 0.5)) + 0.5).toFixed(1); //플레이어의 공격 증가율        
-            console.log(chalk.yellow(`플레이어가 몬스터를 공격하여 ${Math.round(player.str * AtkPro)}의 데미지를 입혔습니다.`));
-            monster.hp -= Math.round(player.str * AtkPro);
+            console.log(chalk.yellow(`플레이어가 몬스터를 공격하여 ${Math.round(this.str * AtkPro)}의 데미지를 입혔습니다.`));
+            monster.hp -= Math.round(this.str * AtkPro);
         }
 
     }
@@ -46,7 +46,7 @@ class Player {
         }
     }
 
-    conAtk(player, monster) {
+    conAtk(monster) {
         let conPro = Math.round((Math.random() * (7 - 0)) + 0); //최대 공격 횟수
 
         if (monster.def === true) {
@@ -61,8 +61,8 @@ class Player {
                 for (let i = 0; i < conPro; i++) {
                     let AtkPro = ((Math.random() * (1.5 - 0.5)) + 0.5).toFixed(1); //플레이어의 공격 증가율
                     //console.log(AtkPro);
-                    console.log(chalk.yellow(`플레이어가 몬스터에게 연속 공격을 사용하여 ${Math.round(player.str * AtkPro)}의 데미지를 입혔습니다.`));
-                    monster.hp -= (Math.round(player.str * AtkPro));
+                    console.log(chalk.yellow(`플레이어가 몬스터에게 연속 공격을 사용하여 ${Math.round(this.str * AtkPro)}의 데미지를 입혔습니다.`));
+                    monster.hp -= (Math.round(this.str * AtkPro));
                 }
     
             }
@@ -70,12 +70,11 @@ class Player {
         
     }
 
-    heal(player) {
-         
-        if (player.mp >= 5 && this.max_hp > player.hp) {
-            console.log(chalk.blue(`플레이어가 체력을 ${Math.round((this.max_hp - player.hp) * 0.5)}만큼 회복하였습니다.`))
-            player.hp += Math.round((this.max_hp - player.hp) * 0.5);
-            player.mp -= 5;
+    heal() {
+        if (this.mp >= 5 && this.max_hp > this.hp) {
+            console.log(chalk.blue(`플레이어가 체력을 ${Math.round((this.max_hp - this.hp) * 0.5)}만큼 회복하였습니다.`))
+            this.hp += Math.round((this.max_hp - this.hp) * 0.5);
+            this.mp -= 5;
         }
         else {
             console.log(chalk.red(`힐 발동에 실패하였습니다.`));
@@ -90,14 +89,14 @@ class Monster {
         this.def = def;
     }
 
-    attack(player, monster) {
+    attack(player) {
         if (player.def) {
             console.log(chalk.blue(`방어에 성공했습니다.`));
             player.def = false;
         }
         else {
-            console.log(chalk.red(`몬스터가 플레이어를 공격하여 ${monster.str}의 데미지를 입혔습니다.`))
-            player.hp -= monster.str;
+            console.log(chalk.red(`몬스터가 플레이어를 공격하여 ${this.str}의 데미지를 입혔습니다.`))
+            player.hp -= this.str;
         }
 
     }
@@ -113,14 +112,14 @@ class Monster {
         }
     }
 
-    superAttack(player, monster) {
+    superAttack(player) {
         if (player.def) {
             console.log(chalk.blue(`방어에 성공했습니다.`));
             player.def = false;
         }
         else {
-            console.log(chalk.red(`몬스터가 플레이어에게 강타를 사용하여 ${(Math.round(player.max_hp * 0.3) + monster.str)}의 데미지를 입혔습니다.`))
-            player.hp -= (Math.round(player.max_hp * 0.3) + monster.str);
+            console.log(chalk.red(`몬스터가 플레이어에게 강타를 사용하여 ${(Math.round(player.max_hp * 0.3) + this.str)}의 데미지를 입혔습니다.`))
+            player.hp -= (Math.round(player.max_hp * 0.3) + this.str);
         }
     }
 
@@ -130,14 +129,14 @@ class Dragon extends Monster {
         super(hp, str, def);
     }
  
-    superAttack(player,monster) {
+    superAttack(player) {
          if (player.def) {
              console.log(chalk.blue(`방어에 성공했습니다.`));
              player.def = false;
          }
          else {
-             console.log(chalk.red(`드래곤이 플레이어에게 불기둥을 사용하여 ${(Math.round(player.max_hp * 0.5) + monster.str)}의 데미지를 입혔습니다.`))
-             player.hp -= (Math.round(player.max_hp * 0.3) + monster.str);
+             console.log(chalk.red(`드래곤이 플레이어에게 불기둥을 사용하여 ${(Math.round(player.max_hp * 0.5) + this.str)}의 데미지를 입혔습니다.`))
+             player.hp -= (Math.round(player.max_hp * 0.3) + this.str);
          }
      
      }
@@ -148,13 +147,13 @@ function motion(choice,pattern,player,monster) {
             player.defence();
             switch (pattern) {
                 case 1: //공격
-                    monster.attack(player, monster);
+                    monster.attack(player);
                     break;
                 case 2: //방어하기
                     monster.defence();
                     break;
                 case 3: //강타
-                    monster.superAttack(player, monster);
+                    monster.superAttack(player);
                     break;
             }
         }
@@ -168,7 +167,7 @@ function motion(choice,pattern,player,monster) {
             monster.defence();
             switch (Number(choice)) {
                 case 1: //공격
-                    player.attack(player, monster);
+                    player.attack(monster);
                     break;
                 case 2: //방어하기
                     player.defence();
@@ -177,17 +176,17 @@ function motion(choice,pattern,player,monster) {
                     player.run();
                     break;
                 case 4: //연속 공격
-                    player.conAtk(player, monster);
+                    player.conAtk(monster);
                     break;
                 case 5: //회복
-                    player.heal(player);
+                    player.heal();
                     break;
             }
         }
         else { //서로 2가 아닐때
             switch (Number(choice)) {
                 case 1: //공격
-                    player.attack(player, monster);
+                    player.attack(monster);
                     break;
                 case 2: //방어하기
                     player.defence();
@@ -196,22 +195,22 @@ function motion(choice,pattern,player,monster) {
                     player.run();
                     break;
                 case 4: //연속 공격
-                    player.conAtk(player, monster);
+                    player.conAtk(monster);
                     break;
                 case 5: //회복
-                    player.heal(player);
+                    player.heal();
                     break;
             }
 
             switch (pattern) {
                 case 1: //공격
-                    monster.attack(player, monster);
+                    monster.attack(player);
                     break;
                 case 2: //방어하기
                     monster.defence();
                     break;
                 case 3: //강타
-                    monster.superAttack(player, monster);
+                    monster.superAttack(player);
                     break;
             }
         }
