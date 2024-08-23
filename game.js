@@ -3,10 +3,10 @@ import readlineSync from 'readline-sync';
 import figlet from 'figlet';
 
 
-function delay(ms,stage) {    
+function delay(ms, stage) {
     return new Promise((resolve) => {
         for (let i = 0; i < 3; i++) {
-            if(stage === 1) {
+            if (stage === 1) {
                 setTimeout(() => {
                     switch (i) {
                         case 0:
@@ -67,9 +67,9 @@ function delay(ms,stage) {
                             resolve();
                             break;
                     }
-                }, ms * (i+1));
+                }, ms * (i + 1));
             }
-            else if(stage % 5 === 0){
+            else if (stage % 5 === 0) {
                 setTimeout(() => {
                     switch (i) {
                         case 0:
@@ -84,18 +84,21 @@ function delay(ms,stage) {
                             resolve();
                             break;
                     }
-                }, ms * (i+1));
+                }, ms * (i + 1));
             }
             else {
                 resolve();
             }
-           
+
         }
     });
 
 }
 
-
+function random(int) {
+    let save = ((Math.random() * (int - 1)) + 1);
+    return save;
+}
 
 class Player {
     constructor(max_hp, hp, mp, str, def) {
@@ -112,16 +115,17 @@ class Player {
             monster.def = false;
         }
         else {
-            let AtkPro = ((Math.random() * (1.5 - 0.5)) + 0.5).toFixed(1); //플레이어의 공격 증가율        
-            console.log(chalk.yellow(`플레이어가 몬스터를 공격하여 ${Math.round(this.str * AtkPro)}의 데미지를 입혔습니다.`));
-            monster.hp -= Math.round(this.str * AtkPro);
+            let AtkPro = ((Math.random() * (1.5 - 0.5)) + 0.5).toFixed(1); //플레이어의 공격 증가율   
+            let damage = Math.round(this.str * AtkPro);
+            console.log(chalk.yellow(`플레이어가 몬스터를 공격하여 ${damage}의 데미지를 입혔습니다.`));
+            monster.hp -= damage;
         }
 
     }
 
     defence() {
         console.log(chalk.gray("플레이어가 방어를 시전했다."));
-        let defPro = Math.round((Math.random() * (10 - 1)) + 1);
+        let defPro = random(10);
         if (defPro % 2 === 0) {
             this.def = true;
             console.log(chalk.blue("플레이어가 방어 시전에 성공했다."));
@@ -133,7 +137,7 @@ class Player {
     }
 
     run() {
-        let runPro = Math.round((Math.random() * (5 - 1)) + 1);
+        let runPro = random(5);
         if (runPro % 2 === 0) { //40%
             console.log(chalk.blue("당신은 발에 땀이 나도록 호다닥 도망갔습니다."));
             startGame();
@@ -157,9 +161,10 @@ class Player {
             else {
                 for (let i = 0; i < conPro; i++) {
                     let AtkPro = ((Math.random() * (1.5 - 0.5)) + 0.5).toFixed(1); //플레이어의 공격 증가율
+                    let damage = Math.round(this.str * AtkPro);
                     //console.log(AtkPro);
-                    console.log(chalk.yellow(`플레이어가 몬스터에게 연속 공격을 사용하여 ${Math.round(this.str * AtkPro)}의 데미지를 입혔습니다.`));
-                    monster.hp -= (Math.round(this.str * AtkPro));
+                    console.log(chalk.yellow(`플레이어가 몬스터에게 연속 공격을 사용하여 ${damage}의 데미지를 입혔습니다.`));
+                    monster.hp -= damage;
                 }
 
             }
@@ -167,10 +172,11 @@ class Player {
 
     }
 
-    async heal() {
+    heal() {
+        let healing = Math.round((this.max_hp - this.hp) * 0.5);
         if (this.mp >= 5 && this.max_hp > this.hp) {
-            console.log(chalk.blue(`플레이어가 체력을 ${Math.round((this.max_hp - this.hp) * 0.5)}만큼 회복하였습니다.`))
-            this.hp += Math.round((this.max_hp - this.hp) * 0.5);
+            console.log(chalk.blue(`플레이어가 체력을 ${healing}만큼 회복하였습니다.`))
+            this.hp += healing;
             this.mp -= 5;
         }
         else {
@@ -188,13 +194,14 @@ class Monster {
     }
 
     async attack(player) {
+        let damage = this.str;
         if (player.def) {
             console.log(chalk.blue(`방어에 성공했습니다.`));
             player.def = false;
         }
         else {
-            console.log(chalk.red(`몬스터가 플레이어를 공격하여 ${this.str}의 데미지를 입혔습니다.`))
-            player.hp -= this.str;
+            console.log(chalk.red(`몬스터가 플레이어를 공격하여 ${damage}의 데미지를 입혔습니다.`))
+            player.hp -= damage;
         }
 
     }
@@ -213,30 +220,32 @@ class Monster {
     }
 
     superAttack(player) {
+        let damage = (Math.round(player.max_hp * 0.3) + this.str);
         if (player.def) {
             console.log(chalk.blue(`방어에 성공했습니다.`));
             player.def = false;
         }
         else {
-            console.log(chalk.red(`몬스터가 플레이어에게 강타를 사용하여 ${(Math.round(player.max_hp * 0.3) + this.str)}의 데미지를 입혔습니다.`))
-            player.hp -= (Math.round(player.max_hp * 0.3) + this.str);
+            console.log(chalk.red(`몬스터가 플레이어에게 강타를 사용하여 ${damage}의 데미지를 입혔습니다.`))
+            player.hp -= damage;
         }
     }
 
 }
 class Dragon extends Monster {
-    constructor(hp, str, def,name) {
+    constructor(hp, str, def, name) {
         super(hp, str, def, name);
     }
 
     superAttack(player) {
+        let damage = Math.round(player.max_hp * 0.5) + this.str * 0.5;
         if (player.def) {
             console.log(chalk.blue(`방어에 성공했습니다.`));
             player.def = false;
         }
         else {
-            console.log(chalk.red(`드래곤이 플레이어에게 불기둥을 사용하여 ${(Math.round(player.max_hp * 0.5) + this.str * 0.5)}의 데미지를 입혔습니다.`))
-            player.hp -= (Math.round(player.max_hp * 0.5) + this.str * 0.5);
+            console.log(chalk.red(`드래곤이 플레이어에게 불기둥을 사용하여 ${damage}의 데미지를 입혔습니다.`))
+            player.hp -= damage;
         }
 
     }
@@ -248,20 +257,22 @@ class Oak extends Monster {
     }
 
     superAttack(player) {
+        let hpdiv = this.str;
+        let damage = Math.round(player.max_hp * 0.4) + this.str;
         if (player.def) {
             console.log(chalk.blue(`방어에 성공했습니다.`));
             player.def = false;
         }
         else {
-            console.log(chalk.red(`오크가 플레이어에게 몽둥이찜질 사용하여 ${(Math.round(player.max_hp * 0.4) + this.str)}의 데미지를 입히고
+            console.log(chalk.red(`오크가 플레이어에게 몽둥이찜질 사용하여 ${damage}의 데미지를 입히고
                                                            플레이어의 최대 체력을 감소시켰습니다.`))
-            player.hp -= (Math.round(player.max_hp * 0.4) + this.str);
-            player.max_hp -= this.str;
+            player.hp -= damage;
+            player.max_hp -= hpdiv;
         }
 
     }
 }
-async function motion(choice, pattern, player, monster) {
+function motion(choice, pattern, player, monster) {
     if (Number(choice) === 2) {
         if (pattern !== 2) {
             player.defence();
@@ -338,18 +349,18 @@ async function motion(choice, pattern, player, monster) {
 }
 
 
-async function displayStatus(stage, player, monster, pattern) {
+function displayStatus(stage, player, monster, pattern) {
     let playerHPbar = "";
-    for(let i = 0 ; i < player.hp / 10; i++) {
+    for (let i = 0; i < player.hp / 10; i++) {
         playerHPbar += '=';
     }
     let playerMPbar = "";
-    for(let i = 0 ; i < player.mp / 5; i++) {
+    for (let i = 0; i < player.mp / 5; i++) {
         playerMPbar += '=';
     }
 
     let monsterHPbar = "";
-    for(let i = 0 ; i < monster.hp / 10; i++) {
+    for (let i = 0; i < monster.hp / 10; i++) {
         monsterHPbar += '=';
     }
 
@@ -373,7 +384,7 @@ HP:${monsterHPbar}(${monster.hp})
     );
     console.log(chalk.magentaBright(`==========================================================\n`));
 
-  
+
     if (player.hp <= player.max_hp * 0.5) {
         console.log(`당신은 등줄기에 식은땀이 흐르는 것을 느낀다...
             `);
@@ -388,7 +399,7 @@ HP:${monsterHPbar}(${monster.hp})
 const battle = async (stage, player, monster) => {
     let logs = [];
 
-    await delay(1500,stage);
+    await delay(1500, stage);
     while (player.hp > 0 && monster.hp > 0) {
         let pattern = Math.round(Math.random() * (3 - 1) + 1); //MonsterPattern 1,2,3
 
@@ -423,6 +434,10 @@ const battle = async (stage, player, monster) => {
                     break;
                 case 5: // 힐
                     logs.push(chalk.green(`회복을 선택하셨습니다.`));
+                    break;
+                default:
+                    console.log("어허 그건 옳은 행동이 아닐세.");
+                    battle_in();
                     break;
             }
 
