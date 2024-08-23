@@ -2,6 +2,14 @@ import chalk, { colorNames } from 'chalk';
 import readlineSync from 'readline-sync';
 import figlet from 'figlet';
 
+
+const promise = new Promise((resolve, reject) => {
+    setTimeout(() => {
+        console.log("나에게 힘을 주소서");
+        resolve("완료");
+    }, 3000);
+});
+
 class Player {
     constructor(max_hp, hp, mp, str, def) {
         this.max_hp = max_hp; //최대 HP
@@ -25,13 +33,15 @@ class Player {
     }
 
     defence() {
+        console.log(chalk.gray("플레이어가 방어를 시전했다."));
         let defPro = Math.round((Math.random() * (10 - 1)) + 1);
         if (defPro % 2 === 0) {
             this.def = true;
+            console.log(chalk.blue("플레이어가 방어 시전에 성공했다."));
         }
         else {
             this.def = false;
-            console.log(chalk.red("방어에 실패했습니다."));
+            console.log(chalk.red("방어 시전에 실패했습니다."));
         }
     }
 
@@ -64,14 +74,14 @@ class Player {
                     console.log(chalk.yellow(`플레이어가 몬스터에게 연속 공격을 사용하여 ${Math.round(this.str * AtkPro)}의 데미지를 입혔습니다.`));
                     monster.hp -= (Math.round(this.str * AtkPro));
                 }
-    
+
             }
-        }      
-        
+        }
+
     }
 
-    heal() {
-        if (this.mp >= 5 && this.max_hp > this.hp) {
+    async heal() {
+        if (this.mp >= 5 && this.max_hp > this.hp) {           
             console.log(chalk.blue(`플레이어가 체력을 ${Math.round((this.max_hp - this.hp) * 0.5)}만큼 회복하였습니다.`))
             this.hp += Math.round((this.max_hp - this.hp) * 0.5);
             this.mp -= 5;
@@ -102,13 +112,15 @@ class Monster {
     }
 
     defence() {
+        console.log(chalk.gray("몬스터가 방어를 시전했다."));
         let defPro = Math.round((Math.random() * (7 - 1)) + 1);
         if (defPro % 2 === 0) {
-            this.def = true;           
+            this.def = true;
+            console.log(chalk.red("몬스터가 방어 시전에 성공했다."));
         }
         else {
             this.def = false;
-            console.log(chalk.blue("몬스터가 방어에 실패했습니다."));
+            console.log(chalk.blue("몬스터가 방어 시전에 실패했습니다."));
         }
     }
 
@@ -128,20 +140,40 @@ class Dragon extends Monster {
     constructor(hp, str, def) {
         super(hp, str, def);
     }
- 
+
     superAttack(player) {
-         if (player.def) {
-             console.log(chalk.blue(`방어에 성공했습니다.`));
-             player.def = false;
-         }
-         else {
-             console.log(chalk.red(`드래곤이 플레이어에게 불기둥을 사용하여 ${(Math.round(player.max_hp * 0.5) + this.str)}의 데미지를 입혔습니다.`))
-             player.hp -= (Math.round(player.max_hp * 0.3) + this.str);
-         }
-     
-     }
+        if (player.def) {
+            console.log(chalk.blue(`방어에 성공했습니다.`));
+            player.def = false;
+        }
+        else {
+            console.log(chalk.red(`드래곤이 플레이어에게 불기둥을 사용하여 ${(Math.round(player.max_hp * 0.5) + this.str * 0.5)}의 데미지를 입혔습니다.`))
+            player.hp -= (Math.round(player.max_hp * 0.5)+ this.str * 0.5);
+        }
+
+    }
 }
-function motion(choice,pattern,player,monster) {
+
+class Oak extends Monster {
+    constructor(hp, str, def) {
+        super(hp, str, def);
+    }
+
+    superAttack(player) {
+        if (player.def) {
+            console.log(chalk.blue(`방어에 성공했습니다.`));
+            player.def = false;
+        }
+        else {
+            console.log(chalk.red(`오크가 플레이어에게 몽둥이찜질 사용하여 ${(Math.round(player.max_hp * 0.4) + this.str)}의 데미지를 입히고
+                                                           플레이어의 최대 체력을 감소시켰습니다.`))
+            player.hp -= (Math.round(player.max_hp * 0.4) + this.str);
+            player.max_hp -= this.str;
+        }
+
+    }
+}
+async function motion(choice, pattern, player, monster) {
     if (Number(choice) === 2) {
         if (pattern !== 2) {
             player.defence();
@@ -216,7 +248,7 @@ function motion(choice,pattern,player,monster) {
         }
     }
 }
-function displayStatus(stage, player, monster,pattern) {
+async function displayStatus(stage, player, monster, pattern) {
     console.log(chalk.magentaBright(`\n=== Current Status ===`));
     console.log(
         chalk.cyanBright(`| Stage: ${stage} `) +
@@ -234,65 +266,60 @@ function displayStatus(stage, player, monster,pattern) {
             `);
     }
 
-    if(pattern === 3) {
+    if (pattern === 3) {
         console.log(`몬스터에게 강한 힘이 느껴진다.... 큰 공격이 올 거 같다`);
     }
+
 }
+
 
 const battle = async (stage, player, monster) => {
     let logs = [];
 
     while (player.hp > 0 && monster.hp > 0) {
+        let pattern = Math.round(Math.random() * (3 - 1) + 1); //MonsterPattern 1,2,3
+            displayStatus(stage, player, monster, pattern);
 
-        //1.player와 monster의 죽음을 check => playerLive,monsterLive 변수를 제작하여 어떠한 동작 메서드가 호출되고 실행하는 마지막에 monster나 player의 죽음을 체크하여
-        //true나 false를 반환하고 
-        let pattern = Math.round(Math.random() * (3 - 1) + 1); //MonsterPattern
-        displayStatus(stage, player, monster,pattern);
-      
-        logs.forEach((log) => console.log(log));
+            if(logs.length > 12) {
+                logs.shift();
+            }
+            logs.forEach((log) => console.log(log));
+    
+            console.log(
+                chalk.green(
+                    `\n1. 공격한다 2. 방어한다 3. 도망간다. 4. 연속 공격 5. 회복`,
+                ),
+            );
+            const choice = readlineSync.question('당신의 선택은?');
+    
+            switch (Number(choice)) {
+                case 1: //공격
+                    logs.push(chalk.green(`공격을 선택하셨습니다.`));
+                    break;
+                case 2: //방어하기
+                    logs.push(chalk.green(`방어를 선택하셨습니다.`));
+                    break;
+                case 3: //도망치기
+                    logs.push(chalk.green(`도망을 선택하셨습니다.`));
+                    break;
+                case 4: //연속 공격
+                    logs.push(chalk.green(`연속 공격을 선택하셨습니다.`));
+                    break;
+                case 5: // 힐
+                    logs.push(chalk.green(`회복을 선택하셨습니다.`));
+                    break;
+                default :
+                    console.log("해당 동작은 없습니다.");
+                     continue;     
+            }
+       
+            motion(choice, pattern, player, monster);// 플레이어의 동작 처리
+     
+            if (player.def === true || monster.def === true) {
+                player.def = false;
+                monster.def = false;
+            }
 
-        console.log(
-            chalk.green(
-                `\n1. 공격한다 2. 방어한다 3. 도망간다. 4. 연속 공격 5. 회복`,
-            ),
-        );
-        const choice = readlineSync.question('당신의 선택은?');
-
-        switch (Number(choice)) {
-            case 1: //공격
-                logs.push(chalk.green(`공격을 선택하셨습니다.`));
-                break;
-            case 2: //방어하기
-                logs.push(chalk.green(`방어를 선택하셨습니다.`));
-                break;
-            case 3: //도망치기
-                logs.push(chalk.green(`도망을 선택하셨습니다.`));
-                break;
-            case 4: //연속 공격
-                logs.push(chalk.green(`연속 공격을 선택하셨습니다.`));
-                break;
-            case 5: // 힐
-                logs.push(chalk.green(`회복을 선택하셨습니다.`));
-                break;
-        }
-
-        motion(choice,pattern,player,monster); // 플레이어의 동작 처리
-
-        //logs.push(chalk.green(`${choice}를 선택하셨습니다.`));
-
-        //1.방어를 먼저 우선으로 처리를 한다.
-        //2.한쪽이 방어일때 나머지 쪽은 무조건 후순위로 가게된다.
-        //3.양쪽다 방어가 아닐경우엔 플레이어를 우선순위로 실행하게 된다.     
-        
-        //몬스터 패턴
-        //1.공격
-        //2.강타
-        //3.방어
-
-        if (player.def === true || monster.def === true) {
-            player.def = false;
-            monster.def = false;
-        }
     }
 
 };
@@ -304,8 +331,10 @@ export async function startGame() {
     while (stage <= 10) {
         const player = new Player(stage * 150, stage * 150, stage * 10, stage * 30, false);
         let monster = new Monster(stage * 200, stage * 20, false);
+
+        let hidden = Math.round(Math.random() * (2-1) + 1);
         console.log(`Stage:${stage}`);
-        if(stage % 5 === 0) {
+        if (stage % 5 === 0 && hidden === 1) {
             console.log(`히든 스테이지 출현!!!`);
             console.log(
                 chalk.red(
@@ -316,7 +345,20 @@ export async function startGame() {
                     })
                 )
             );
-            monster = new Dragon(stage * 300, stage * 50, false);
+            monster = new Dragon(stage * 300, stage * 60, false);
+        }
+        else if (stage % 5 === 0 && hidden === 2) {
+            console.log(`히든 스테이지 출현!!!`);
+            console.log(
+                chalk.green(
+                    figlet.textSync('Oak-King', {
+                        font: 'Standard',
+                        horizontalLayout: 'default',
+                        verticalLayout: 'default'
+                    })
+                )
+            );
+            monster = new Oak(stage * 500, stage * 40, false);
         }
         await battle(stage, player, monster);
 
