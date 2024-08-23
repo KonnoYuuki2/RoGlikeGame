@@ -1,7 +1,7 @@
 import chalk, { backgroundColorNames, colorNames } from 'chalk';
 import readlineSync from 'readline-sync';
 import figlet from 'figlet';
-
+import { start } from "./server.js";
 
 function delay(ms, stage) {
     return new Promise((resolve) => {
@@ -96,10 +96,9 @@ function delay(ms, stage) {
 }
 
 function random(int) {
-    let save = ((Math.random() * (int - 1)) + 1);
+    let save = Math.round((Math.random() * (int - 1)) + 1);
     return save;
 }
-
 class Player {
     constructor(max_hp, hp, mp, str, def) {
         this.max_hp = max_hp; //최대 HP
@@ -108,6 +107,7 @@ class Player {
         this.str = str; //공격력
         this.def = def; //방어확률
     }
+
 
     attack(monster) {
         if (monster.def === true) {
@@ -140,7 +140,7 @@ class Player {
         let runPro = random(5);
         if (runPro % 2 === 0) { //40%
             console.log(chalk.blue("당신은 발에 땀이 나도록 호다닥 도망갔습니다."));
-            startGame();
+            reStart();
         }
         else {
             console.log(chalk.red("도망에 실패했습니다."));
@@ -160,9 +160,10 @@ class Player {
             }
             else {
                 for (let i = 0; i < conPro; i++) {
-                    let AtkPro = ((Math.random() * (1.5 - 0.5)) + 0.5).toFixed(1); //플레이어의 공격 증가율
-                    let damage = Math.round(this.str * AtkPro);
-                    //console.log(AtkPro);
+                    let atkPro = ((Math.random() * (1.5 - 0.5)) + 0.5).toFixed(1); //플레이어의 공격 증가율
+                    let damage = Math.round(this.str * atkPro);
+                    //m HP 0 
+                    //이벤트 하나하나를 체크하다가 중지.
                     console.log(chalk.yellow(`플레이어가 몬스터에게 연속 공격을 사용하여 ${damage}의 데미지를 입혔습니다.`));
                     monster.hp -= damage;
                 }
@@ -185,6 +186,7 @@ class Player {
     }
 
 }
+
 class Monster {
     constructor(hp, str, def, name) {
         this.hp = hp;
@@ -193,7 +195,7 @@ class Monster {
         this.name = name;
     }
 
-    async attack(player) {
+    attack(player) {
         let damage = this.str;
         if (player.def) {
             console.log(chalk.blue(`방어에 성공했습니다.`));
@@ -250,7 +252,6 @@ class Dragon extends Monster {
 
     }
 }
-
 class Oak extends Monster {
     constructor(hp, str, def, name) {
         super(hp, str, def, name);
@@ -272,7 +273,11 @@ class Oak extends Monster {
 
     }
 }
+
 function motion(choice, pattern, player, monster) {
+    //왜 이런식으로 처리를 하였는가...
+    //플레이어가 방어를 했는데, 만약 몬스터가 공격을 했다면 -> 방어가 1순위로 들어져야지만 방어가 가능하기 떄문 이는 몬스터도 마찬가지이다.
+    //흐름 자체가 동기적이기에 참 애매한거같은데...
     if (Number(choice) === 2) {
         if (pattern !== 2) {
             player.defence();
@@ -305,7 +310,7 @@ function motion(choice, pattern, player, monster) {
                     break;
                 case 3: //도망치기
                     player.run();
-                    break;
+                    return;
                 case 4: //연속 공격
                     player.conAtk(monster);
                     break;
@@ -324,7 +329,7 @@ function motion(choice, pattern, player, monster) {
                     break;
                 case 3: //도망치기
                     player.run();
-                    break;
+                    return;
                 case 4: //연속 공격
                     player.conAtk(monster);
                     break;
@@ -347,8 +352,6 @@ function motion(choice, pattern, player, monster) {
         }
     }
 }
-
-
 function displayStatus(stage, player, monster, pattern) {
     let playerHPbar = "";
     for (let i = 0; i < player.hp / 10; i++) {
@@ -396,75 +399,92 @@ HP:${monsterHPbar}(${monster.hp})
 
 }
 
-const battle = async (stage, player, monster) => {
-    let logs = [];
 
+let choice = ""; //플레이어의 선택
+let logs = [];   //로그 저장    
+let battle_in = function (player, monster, pattern, logs) {
+    if (logs.length > 12) {
+        logs.shift();
+    }
+    logs.forEach((log) => console.log(log));
+
+    console.log(
+        chalk.green(
+            `\n1. 공격한다 2. 방어한다 3. 도망간다. 4. 연속 공격 5. 회복`,
+        ),
+    );
+    choice = readlineSync.question('당신의 선택은?');
+
+    switch (Number(choice)) {
+        case 1: //공격
+            logs.push(chalk.green(`공격을 선택하셨습니다.`));
+            break;
+        case 2: //방어하기
+            logs.push(chalk.green(`방어를 선택하셨습니다.`));
+            break;
+        case 3: //도망치기
+            logs.push(chalk.green(`도망을 선택하셨습니다.`));
+            break;
+        case 4: //연속 공격
+            logs.push(chalk.green(`연속 공격을 선택하셨습니다.`));
+            break;
+        case 5: // 힐
+            logs.push(chalk.green(`회복을 선택하셨습니다.`));
+            break;
+        default:
+            console.log("어허 그건 옳은 행동이 아닐세.");
+            battle_in();
+            break;
+    }
+
+    motion(choice, pattern, player, monster);// 플레이어의 동작 처리              
+
+    if (player.def === true || monster.def === true) {
+        player.def = false;
+        monster.def = false;
+    }
+}
+
+const battle = async (stage, player, monster) => {
     await delay(1500, stage);
+
     while (player.hp > 0 && monster.hp > 0) {
         let pattern = Math.round(Math.random() * (3 - 1) + 1); //MonsterPattern 1,2,3
 
         displayStatus(stage, player, monster, pattern);
 
-        let choice = "";
-        let battle_in = async function (stage, player, monster, pattern, logs) {
-            if (logs.length > 12) {
-                logs.shift();
-            }
-            logs.forEach((log) => console.log(log));
-
-            console.log(
-                chalk.green(
-                    `\n1. 공격한다 2. 방어한다 3. 도망간다. 4. 연속 공격 5. 회복`,
-                ),
-            );
-            choice = readlineSync.question('당신의 선택은?');
-
-            switch (Number(choice)) {
-                case 1: //공격
-                    logs.push(chalk.green(`공격을 선택하셨습니다.`));
-                    break;
-                case 2: //방어하기
-                    logs.push(chalk.green(`방어를 선택하셨습니다.`));
-                    break;
-                case 3: //도망치기
-                    logs.push(chalk.green(`도망을 선택하셨습니다.`));
-                    break;
-                case 4: //연속 공격
-                    logs.push(chalk.green(`연속 공격을 선택하셨습니다.`));
-                    break;
-                case 5: // 힐
-                    logs.push(chalk.green(`회복을 선택하셨습니다.`));
-                    break;
-                default:
-                    console.log("어허 그건 옳은 행동이 아닐세.");
-                    battle_in();
-                    break;
-            }
-
-            motion(choice, pattern, player, monster);// 플레이어의 동작 처리              
-
-        }
-
-        battle_in(stage, player, monster, pattern, logs);
-
-        if (player.def === true || monster.def === true) {
-            player.def = false;
-            monster.def = false;
-        }
-
+        battle_in(player, monster, pattern, logs);
     }
 
 };
 
 let stage = 1; //스테이지의 값은 도망가더라도 남아있게된다.
 
+function reStart() {
+    let revive = readlineSync.keyInYN(`다시 시작하고 싶은가?        
+         Y. 예  / N. 아니오
+         `);
+
+    switch (Number(revive)) {
+        case 1:
+            console.log("자넬 로비로 보내주겠네 다시 올라오게");
+            start();
+            return;
+        case 2:
+            console.log("저리 꺼지게나");
+            process.exit(0);
+        default:
+            console.log("그런 선택지는 없다네");
+            reStart();
+            break;
+    }
+}
 export async function startGame() {
-    //console.clear();
+    //console.clear();   
     while (stage <= 10) {
         let hidden = Math.round(Math.random() * (2 - 1) + 1); //보스몹 출현 설정
         const player = new Player(stage * 150, stage * 150, stage * 10, stage * 30, false);
         let monster = new Monster(stage * 200, stage * 20, false, "Goblin");
-
 
         console.log(
             chalk.blueBright(

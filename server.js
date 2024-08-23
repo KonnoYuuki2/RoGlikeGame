@@ -5,7 +5,7 @@ import {startGame} from "./game.js";
 
 // 로비 화면을 출력하는 함수
 function displayLobby() {
-    console.clear();
+    //console.clear();
 
     // 타이틀 텍스트
     console.log(
@@ -58,7 +58,7 @@ function handleUserInput() {
 }
 
 // 게임 시작 함수
-function start() {
+export function start() {
     displayLobby();
     handleUserInput();
 }
